@@ -1,0 +1,355 @@
+:root {
+    --adoc-black: #000000;
+    --adoc-yellow: #FFF000; 
+    --adoc-white: #FFFFFF;
+    --border-color: #E5E5E5;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent; 
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--adoc-white);
+    color: var(--adoc-black);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Ocupa toda la altura de la pantalla del celular */
+}
+
+
+.app-header {
+    width: 100%;
+    padding: 24px 0;
+    text-align: center;
+    border-bottom: 3px solid black;
+    background-color: var(--adoc-white);
+}
+
+.logo-img {
+    width: 100%;
+    max-width: 320px; 
+    height: auto;
+    display: inline-block;
+}
+
+.main-menu {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center;
+    padding: 24px;
+    gap: 32px; 
+}
+
+
+.module-btn {
+    width: 100%;
+    max-width: 320px;
+    aspect-ratio: 1;
+    margin: 0 auto; /* ESTO FUERZA EL CENTRADO ABSOLUTO */
+    border: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    font-size: 32px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: transform 0.1s ease-in-out;
+}
+
+/* Efecto al presionar la pantalla */
+.module-btn:active {
+    transform: scale(0.97);
+}
+
+
+.btn-yellow {
+    background-color: var(--adoc-yellow);
+    color: var(--adoc-black);
+}
+
+.btn-black {
+    background-color: var(--adoc-black);
+    color: var(--adoc-white);
+}
+
+.icon-wrapper {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.camera-bg {
+    background-color: var(--adoc-white);
+    border-radius: 24px;
+}
+
+.icon-svg {
+    width: 60px;
+    height: 60px;
+}
+
+/*ICONO DE PRODUCTO*/
+.icon-img {
+    width: 180px; 
+    height: auto;
+    object-fit: contain; 
+}
+
+.view-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Regla maestra para ocultar vistas en la SPA */
+.hidden {
+    display: none !important;
+}
+
+#vista-escaner {
+    background-color: #1a1a1a; /* Fondo oscuro simulando cámara apagada */
+    justify-content: space-between;
+}
+
+.scanner-ui {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.scanner-frame {
+    width: 250px;
+    height: 150px;
+    border: 4px solid var(--adoc-yellow);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Línea láser animada para darle realismo al mock */
+.laser {
+    width: 100%;
+    height: 2px;
+    background-color: red;
+    box-shadow: 0 0 10px red;
+    position: absolute;
+    top: 0;
+    animation: scan 2s infinite linear;
+}
+
+@keyframes scan {
+    0% { top: 0; }
+    50% { top: 100%; }
+    100% { top: 0; }
+}
+
+.scanner-text {
+    color: var(--adoc-white);
+    margin-top: 24px;
+    font-size: 16px;
+    text-align: center;
+}
+
+#vista-resultados {
+    padding: 24px;
+    background-color: #F8F8F8;
+}
+
+.product-card {
+    background-color: var(--adoc-white);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    margin-bottom: 24px;
+}
+
+.product-title {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.product-sku {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.location-badge {
+    background-color: var(--adoc-yellow);
+    color: var(--adoc-black);
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 24px;
+    font-size: 18px;
+}
+
+.stock-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 8px;
+}
+.stock-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 16px; 
+    justify-content: center; 
+}
+
+.stock-item {
+    padding: 16px 12px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column; 
+    align-items: center;   
+    justify-content: center;
+    text-align: center;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+}
+
+.stock-item strong {
+    font-size: 20px;
+    margin-top: 4px; 
+}
+
+.stock-0 {
+    background-color: #EF9A9A;
+    color: #7F0000;
+    border: 1px solid #FFCDD2;
+}
+
+.stock-1-2 {
+    background-color: #FFCC80;
+    color: #993300;
+    border: 1px solid #FFE0B2;
+}
+
+.stock-3-4 {
+    background-color: #FFF59D;
+    color: #665200; 
+    border: 1px solid #FFF59D;
+}
+
+.stock-5 {
+    background-color: #A5D6A7;
+    color: #1B5E20;
+    border: 1px solid #C8E6C9;
+}
+
+/*BOTONES DE ACCION*/
+.action-buttons {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background-color: var(--adoc-white);
+}
+
+.btn-primary, .btn-secondary {
+    width: 100%;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: var(--adoc-black);
+    color: var(--adoc-white);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--adoc-black);
+    border: 2px solid var(--border-color);
+}
+
+
+#vista-escaner-bodega {
+    background-color: #1a1a1a;
+    position: relative; 
+}
+
+.btn-save-float {
+    position: absolute;
+    bottom: 32px;
+    right: 24px;
+    background-color: var(--adoc-yellow);
+    color: var(--adoc-black);
+    border: none;
+    padding: 16px 32px;
+    border-radius: 50px; 
+    font-size: 18px;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5); 
+    cursor: pointer;
+}
+
+.btn-cancel-float {
+    position: absolute;
+    bottom: 32px;
+    left: 24px;
+    background-color: transparent;
+    color: var(--adoc-white);
+    border: none;
+    padding: 16px;
+    font-size: 16px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--adoc-black);
+    color: var(--adoc-white);
+    padding: 16px 24px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 1000; 
+    font-weight: 600;
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease, bottom 0.3s ease;
+}
+
+.toast.show {
+    opacity: 1;
+    bottom: 40px;
+    display: flex !important; 
+}
+.toast-icon {
+    width: 24px;
+    height: 24px;
+    stroke: var(--adoc-yellow); 
+}
