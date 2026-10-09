@@ -6,7 +6,8 @@
     <title>ADOC Inventario - MVP</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/estilos.css">
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- ZXing: decodifica los códigos de barra (versión fija para que una actualización no rompa la app) -->
+    <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
     
 </head>
 <body>
@@ -35,52 +36,23 @@
         </button>
     </main>
 
-    <!-- VISTA 2: SIMULACIÓN DE CÁMARA (Oculta por defecto) -->
+    <!-- VISTA 2: ESCÁNER DE ZAPATERÍA (Oculta por defecto) -->
     <main id="vista-escaner" class="view-container hidden">
         <div class="scanner-ui">
+            <!-- escaner.js coloca aquí el video de la cámara y la zona de lectura -->
             <div id="reader" class="scanner-frame"></div>
-                <!-- Línea láser animada -->
-                <div class="laser"></div>
-            </div>
-            <p class="scanner-text">Apunta al código de barras del zapato</p>
+            <p id="texto-escaner" class="scanner-text">Apunta al código de barras del zapato</p>
         </div>
-        
+
         <div class="action-buttons">
-            <!-- Este botón simula que la cámara leyó un código exitosamente -->
-            <button id="btn-simular-lectura" class="btn-primary">Simular Lectura</button>
             <button id="btn-cancelar-escaner" class="btn-secondary">Cancelar</button>
         </div>
     </main>
 
     <!-- VISTA 3: RESULTADOS DEL PRODUCTO (Oculta por defecto) -->
+    <!-- El contenido de la tarjeta lo genera script.js según el código escaneado -->
     <main id="vista-resultados" class="view-container hidden">
-        <div class="product-card">
-            <h2 class="product-title">Zapato Oxford Clásico</h2>
-            <p class="product-sku">SKU: 7891011121314</p>
-            
-            <div class="location-badge">
-                <strong>Ubicación:</strong> Pasillo 4, Fila B
-            </div>
-
-            <h3 class="stock-title">Disponibilidad en Bodega</h3>
-            <div class="stock-grid">
-                <!-- Naranja (1 a 2 pares) -->
-                <div class="stock-item stock-1-2"><span>Talla 39</span><strong>2 pares</strong></div>
-                
-                <!-- Rojo (0 pares) -->
-                <div class="stock-item stock-0"><span>Talla 40</span><strong>0 pares</strong></div>
-                
-                <!-- Verde (5 o más pares) -->
-                <div class="stock-item stock-5"><span>Talla 41</span><strong>5 pares</strong></div>
-                
-                <!-- Naranja (1 a 2 pares) -->
-                <div class="stock-item stock-1-2"><span>Talla 42</span><strong>1 par</strong></div>
-
-                <!-- Amarillo (3 a 4 pares) -->
-                <div class="stock-item stock-3-4"><span>Talla 43</span><strong>3 pares</strong></div>
-            </div>
-            </div>
-        </div>
+        <div id="tarjeta-producto" class="product-card"></div>
 
         <div class="action-buttons">
             <button id="btn-nuevo-escaner" class="btn-primary">Escanear Otro</button>
@@ -88,11 +60,18 @@
         </div>
     </main>
 
+    <!-- VISTA 4: ESCÁNER DE BODEGA (Oculta por defecto) -->
+    <!-- Paso 1: escanear el código del pasillo (lo "abre").
+         Paso 2: escanear los zapatos, que quedan registrados en ese pasillo. -->
     <main id="vista-escaner-bodega" class="view-container hidden">
-        <div class="scanner-ui">
-            <div id="reader-bodega" class="scanner-frame">
+        <div class="scanner-ui bodega-ui">
+            <div id="reader-bodega" class="scanner-frame"></div>
+
+            <div class="pasillo-actual">
+                Pasillo: <strong id="pasillo-actual">—</strong>
             </div>
-            <p class="scanner-text">Escaneando pasillo y zapatos...<br><span style="color: var(--adoc-yellow); font-weight: bold;">Simulación continua</span></p>
+            <p id="texto-bodega" class="scanner-text">Escanea el código del pasillo</p>
+            <ul id="lista-bodega" class="lista-bodega"></ul>
         </div>
         
         <button id="btn-cancelar-bodega" class="btn-cancel-float">Cancelar</button>
@@ -106,6 +85,8 @@
         <span>¡Inventario del pasillo guardado!</span>
     </div>
 
+    <script src="javascript/datos.js"></script>
+    <script src="javascript/escaner.js"></script>
     <script src="javascript/script.js"></script>
 </body>
 </html>

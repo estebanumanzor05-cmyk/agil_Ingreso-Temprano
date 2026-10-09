@@ -115,17 +115,13 @@ body {
     width: 100%;
 }
 
-.hidden {
-    display: none !important;
-}
-
 /* Regla maestra para ocultar vistas en la SPA */
 .hidden {
     display: none !important;
 }
 
 #vista-escaner {
-    background-color: #1a1a1a; /* Fondo oscuro simulando cámara apagada */
+    background-color: #1a1a1a; /* Fondo oscuro detrás de la cámara */
     justify-content: space-between;
 }
 
@@ -135,25 +131,52 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    padding: 16px;
 }
 
+/* Contenedor del video de la cámara (lo llena escaner.js) */
 .scanner-frame {
-    width: 250px;
-    height: 150px;
+    width: 100%;
+    max-width: 400px;
+    min-height: 220px;
     border: 4px solid var(--adoc-yellow);
     border-radius: 12px;
-    position: relative;
     overflow: hidden;
+    background-color: #000;
+    position: relative;
 }
 
-/* Línea láser animada para darle realismo al mock */
+.video-camara {
+    width: 100%;
+    display: block;
+}
+
+/* Franja central donde se busca el código. Debe coincidir con
+   ZONA_ANCHO (90%) y ZONA_ALTO (40%) de escaner.js */
+.zona-lectura {
+    position: absolute;
+    left: 5%;
+    right: 5%;
+    top: 30%;
+    bottom: 30%;
+    border: 2px solid var(--adoc-white);
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); /* oscurece lo de afuera */
+    display: none;
+}
+
+.camara-activa .zona-lectura {
+    display: block;
+}
+
+/* Línea láser animada dentro de la zona de lectura */
 .laser {
+    position: absolute;
+    left: 0;
     width: 100%;
     height: 2px;
     background-color: red;
     box-shadow: 0 0 10px red;
-    position: absolute;
-    top: 0;
     animation: scan 2s infinite linear;
 }
 
@@ -188,10 +211,52 @@ body {
     margin-bottom: 4px;
 }
 
+.product-brand {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
 .product-sku {
     color: #666;
     font-size: 14px;
     margin-bottom: 16px;
+}
+
+/* Tarjeta cuando el código escaneado no existe en el inventario */
+.not-found {
+    text-align: center;
+}
+
+.not-found-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background-color: #EF9A9A;
+    color: #7F0000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 700;
+}
+
+.not-found p {
+    color: #444;
+    margin-top: 8px;
+    line-height: 1.4;
+}
+
+.codigo-leido {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 6px 12px;
+    background-color: #F0F0F0;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 16px;
+    word-break: break-all;
 }
 
 .location-badge {
@@ -292,7 +357,59 @@ body {
 
 #vista-escaner-bodega {
     background-color: #1a1a1a;
-    position: relative; 
+    position: relative;
+}
+
+/* Deja espacio abajo para los botones flotantes */
+.bodega-ui {
+    justify-content: flex-start;
+    padding-bottom: 110px;
+}
+
+.pasillo-actual {
+    margin-top: 16px;
+    padding: 10px 24px;
+    border-radius: 50px;
+    background-color: #333;
+    color: var(--adoc-white);
+    font-size: 18px;
+}
+
+.pasillo-actual.abierto {
+    background-color: var(--adoc-yellow);
+    color: var(--adoc-black);
+}
+
+#vista-escaner-bodega .scanner-text {
+    margin-top: 12px;
+}
+
+/* Zapatos escaneados en el pasillo abierto */
+.lista-bodega {
+    list-style: none;
+    width: 100%;
+    max-width: 400px;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lista-bodega li {
+    background-color: var(--adoc-white);
+    color: var(--adoc-black);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 15px;
+}
+
+.lista-bodega li small {
+    color: #666;
+    font-family: monospace;
+    white-space: nowrap;
 }
 
 .btn-save-float {
@@ -346,7 +463,21 @@ body {
 .toast.show {
     opacity: 1;
     bottom: 40px;
-    display: flex !important; 
+    display: flex !important;
+}
+
+.toast {
+    width: max-content;
+    max-width: calc(100vw - 32px);
+}
+
+/* En bodega el aviso va más arriba para no tapar Cancelar y Guardar */
+.modo-bodega .toast {
+    bottom: 100px;
+}
+
+.modo-bodega .toast.show {
+    bottom: 112px;
 }
 .toast-icon {
     width: 24px;
