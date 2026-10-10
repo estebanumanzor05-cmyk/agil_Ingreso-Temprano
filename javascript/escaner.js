@@ -16,9 +16,9 @@
    ===================================================================== */
 
 // Zona de lectura: porcentaje del video, centrada (debe coincidir con .zona-lectura en el CSS)
-const ZONA_ANCHO = 0.9;
-const ZONA_ALTO = 0.4;
-const MILISEGUNDOS_ENTRE_LECTURAS = 120;
+const ZONA_ANCHO = 0.95;
+const ZONA_ALTO = 0.6;
+const MILISEGUNDOS_ENTRE_LECTURAS = 50;
 
 class EscanerCodigos {
     constructor(contenedor) {
@@ -67,8 +67,9 @@ class EscanerCodigos {
             audio: false,
             video: {
                 facingMode: { ideal: 'environment' }, // cámara trasera
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
+                width: { ideal: 800 },
+                height: { ideal: 600 },
+                advanced: [{ focusMode: "continuous" }]
             }
         });
 
