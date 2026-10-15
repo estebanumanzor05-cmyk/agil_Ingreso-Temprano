@@ -53,11 +53,6 @@ function crear(etiqueta, clase, texto) {
     return el;
 }
 
-
-/* =====================================================================
-   ZAPATERÍA: CONSULTA DE PRODUCTOS (HU01 + HU02)
-   ===================================================================== */
-
 // Equivale a: SELECT ... FROM productos JOIN tallas_inventario WHERE sku = ?
 function buscarProducto(codigo) {
     return PRODUCTOS[codigo] || null;
@@ -76,12 +71,46 @@ function textoPares(cantidad) {
 }
 
 function mostrarProducto(codigo, producto) {
-    tarjetaProducto.replaceChildren(
+    tarjetaProducto.replaceChildren();
+
+    // 1. Buscar la ubicación exacta cruzando el SKU con PRODUCTOS_PASILLO
+    const registroUbicacion = PRODUCTOS_PASILLO.find(p => p.sku === codigo);
+    const ubicacion = registroUbicacion ? registroUbicacion.pasillo : 'Sin asignar';
+
+    tarjetaProducto.append(
         crear('h2', 'product-title', producto.nombre),
         crear('p', 'product-brand', producto.marca),
-        crear('p', 'product-sku', 'SKU: ' + codigo),
-        crear('h3', 'stock-title', 'Disponibilidad en Bodega')
+        crear('p', 'product-sku', 'SKU: ' + codigo)
     );
+
+    // 3. HISTORIA DE USUARIO SPRINT 2: Mostrar ubicación en bodega
+    const badgeUbicacion = crear('div', 'location-badge');
+    badgeUbicacion.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+        <span>Ubicación: <strong>Pasillo ${ubicacion}</strong></span>
+    `;
+    tarjetaProducto.append(badgeUbicacion);
+
+    // 4. Grid de disponibilidad (Se mantiene para la transición de la BD)
+    tarjetaProducto.append(crear('h3', 'stock-title', 'Disponibilidad en Bodega'));
+    const grid = crear('div', 'stock-grid');
+    
+    [...producto.tallas]
+        .sort((a, b) => a.talla - b.talla)
+        .forEach(({ talla, cantidad }) => {
+            const item = crear('div', 'stock-item ' + claseStock(cantidad));
+            item.append(
+                crear('span', null, 'Talla ' + talla),
+                crear('strong', null, textoPares(cantidad))
+            );
+            grid.append(item);
+        });
+
+    tarjetaProducto.append(grid);
+}
 
     const grid = crear('div', 'stock-grid');
     // Tallas ordenadas de menor a mayor
@@ -211,17 +240,26 @@ function procesarCodigoBodega(textoDecodificado) {
         }
     }
     // ¿Es el código de un zapato?
-    else if (PRODUCTOS[codigo]) {
-        if (!pasilloAbierto) {
-            mostrarToast('Primero escanea el código del pasillo');
-        } else if (zapatosEscaneados.includes(codigo)) {
-            mostrarToast('Ya escaneado: ' + PRODUCTOS[codigo].nombre);
+else if (PRODUCTOS[codigo]) {
+    if (!pasilloAbierto) {
+        mostrarToast('Primero escanea el código del pasillo');
+    } else {
+        // Buscamos si el zapato ya fue escaneado en esta sesión
+        const zapatoExistente = zapatosEscaneados.find(z => z.sku === codigo);
+        
+        if (zapatoExistente) {
+            // Si ya existe, sumamos 1 a la cantidad
+            zapatoExistente.cantidad += 1;
+            mostrarToast(`+1 agregado (${zapatoExistente.cantidad} en total)`);
         } else {
-            zapatosEscaneados.push(codigo);
-            vibrar();
+            // Si es nuevo, lo agregamos como objeto con cantidad inicial de 1
+            zapatosEscaneados.push({ sku: codigo, cantidad: 1 });
             mostrarToast('Agregado: ' + PRODUCTOS[codigo].nombre);
         }
-    } else {
+        vibrar();
+        reproducirBeep(); // Emite el sonido de caja registradora
+    }
+} else {
         mostrarToast('Código no registrado: ' + codigo);
     }
 
@@ -324,3 +362,25 @@ document.getElementById('btn-cancelar-bodega').addEventListener('click', () => {
 });
 
 document.getElementById('btn-guardar-bodega').addEventListener('click', guardarPasillo);
+
+/*BEEP*/
+function reproducirBeep() {
+    // Usamos Web Audio API nativa del navegador
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscilador = audioCtx.createOscillator();
+    const ganancia = audioCtx.createGain();
+
+    oscilador.connect(ganancia);
+    ganancia.connect(audioCtx.destination);
+
+    // Configuración del sonido (Tono agudo y corto)
+    oscilador.type = 'sine';
+    oscilador.frequency.setValueAtTime(800, audioCtx.currentTime); // 800Hz
+    
+    // Volumen (Baja rápidamente para hacer el efecto "beep")
+    ganancia.gain.setValueAtTime(1, audioCtx.currentTime);
+    ganancia.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+
+    oscilador.start(audioCtx.currentTime);
+    oscilador.stop(audioCtx.currentTime + 0.1);
+}

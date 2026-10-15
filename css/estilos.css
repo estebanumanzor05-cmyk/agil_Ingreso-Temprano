@@ -484,3 +484,23 @@ body {
     height: 24px;
     stroke: var(--adoc-yellow); 
 }
+
+/*Ubicación de pasillo - Sprint 2*/
+.location-badge {
+    background-color: var(--adoc-yellow);
+    color: var(--adoc-black);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    margin: 16px 0;
+    font-size: 18px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.location-badge svg {
+    width: 24px;
+    height: 24px;
+    margin-right: 12px;
+}
