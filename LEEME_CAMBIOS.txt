@@ -1,0 +1,27 @@
+INVENTARIO CORREGIDO — MODELO + TALLA
+
+Se conservan 13 modelos, 49 combinaciones de modelo y talla y 4 pasillos.
+Cada código Code 128 incluye el SKU del modelo + guion + talla.
+Ejemplo: 7891011121301-40 identifica únicamente Tenis Runner Pro talla 40.
+Las imágenes antiguas (un código por modelo) fueron reemplazadas por 49 imágenes.
+
+El SQL es un esquema + datos para una base PostgreSQL NUEVA.
+NO ejecutarlo encima de las tablas anteriores sin planificar una migración.
+Se conservaron las cantidades del mock original como stock inicial.
+Para iniciar el inventario vacío, establecer las cantidades del INSERT en cero.
+
+Flujo de escaneo:
+1. Escanear código de una variante (modelo+talla).
+2. Buscar por tallas_inventario.codigo_barra.
+3. Al REGISTRAR ENTRADA, ejecutar UPDATE cantidad = cantidad + 1 para ese código.
+4. Si se escanea otro par de la misma variante, se incrementa la misma fila.
+5. Si cambia la talla, se incrementa otra fila.
+6. Una CONSULTA no debe aumentar cantidades; solo la acción registrar entrada.
+7. Los pasillos se relacionan con las variantes, no con todo el modelo.
+
+Nota: Este ZIP contiene datos SQL, generador e imágenes, no una aplicación
+web/backend completa. Para que el escáner registre unidades, el backend
+existente debe usar el UPDATE documentado en el SQL.
+
+Para regenerar PNG: pip install python-barcode pillow
+Después: python generar_codigos_barra.py
