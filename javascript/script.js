@@ -55,7 +55,9 @@ function crear(etiqueta, clase, texto) {
 
 // Equivale a: SELECT ... FROM productos JOIN tallas_inventario WHERE sku = ?
 function buscarProducto(codigo) {
-    return PRODUCTOS[codigo] || null;
+    // Solo consulta: si no existe devuelve null y NO crea nada
+    if (!existeCodigo(codigo)) return null;
+    return PRODUCTOS[parsearCodigo(codigo).sku];
 }
 
 // Rangos de color de la pantalla: 0 rojo, 1-2 naranja, 3-4 amarillo, 5+ verde
@@ -73,14 +75,14 @@ function textoPares(cantidad) {
 function mostrarProducto(codigo, producto) {
     tarjetaProducto.replaceChildren();
 
-    // 1. Buscar la ubicación exacta cruzando el SKU con PRODUCTOS_PASILLO
-    const registroUbicacion = PRODUCTOS_PASILLO.find(p => p.sku === codigo);
-    const ubicacion = registroUbicacion ? registroUbicacion.pasillo : 'Sin asignar';
+        // 1. El código puede ser de variante (SKU-talla): la tarjeta muestra el modelo
+    const sku = parsearCodigo(codigo).sku;
+    const ubicacion = pasilloDeModelo(sku);
 
     tarjetaProducto.append(
         crear('h2', 'product-title', producto.nombre),
         crear('p', 'product-brand', producto.marca),
-        crear('p', 'product-sku', 'SKU: ' + codigo)
+        crear('p', 'product-sku', 'SKU: ' + sku)
     );
 
     // 3. HISTORIA DE USUARIO SPRINT 2: Mostrar ubicación en bodega
@@ -112,20 +114,7 @@ function mostrarProducto(codigo, producto) {
     tarjetaProducto.append(grid);
 }
 
-    const grid = crear('div', 'stock-grid');
-    // Tallas ordenadas de menor a mayor
-    [...producto.tallas]
-        .sort((a, b) => a.talla - b.talla)
-        .forEach(({ talla, cantidad }) => {
-            const item = crear('div', 'stock-item ' + claseStock(cantidad));
-            item.append(
-                crear('span', null, 'Talla ' + talla),
-                crear('strong', null, textoPares(cantidad))
-            );
-            grid.append(item);
-        });
-    tarjetaProducto.append(grid);
-}
+    
 
 function mostrarNoEncontrado(codigo) {
     const contenedor = crear('div', 'not-found');
@@ -181,7 +170,12 @@ function procesarCodigoZapateria(textoDecodificado) {
    ===================================================================== */
 
 let pasilloAbierto = null;    // letra del pasillo abierto (A, B, C o D)
-let zapatosEscaneados = [];   // SKU escaneados en el pasillo abierto
+let zapatosEscaneados = [];   // { codigo, cantidad } escaneados en el pasillo abierto
+
+// Total de pares escaneados en la sesión (suma de cantidades)
+function totalEscaneados() {
+    return zapatosEscaneados.reduce((suma, z) => suma + z.cantidad, 0);
+}
 let ultimoCodigoBodega = '';
 let horaUltimoCodigo = 0;
 
@@ -202,15 +196,15 @@ function actualizarPantallaBodega() {
     } else if (zapatosEscaneados.length === 0) {
         textoBodega.textContent = 'Ahora escanea los zapatos del pasillo';
     } else {
-        const n = zapatosEscaneados.length;
+        const n = totalEscaneados();
         textoBodega.textContent = n + (n === 1 ? ' zapato escaneado' : ' zapatos escaneados');
     }
 
     // El último escaneado aparece primero
     listaBodega.replaceChildren(
-        ...[...zapatosEscaneados].reverse().map((sku) => {
+                ...[...zapatosEscaneados].reverse().map(({ codigo }) => {
             const li = crear('li');
-            li.append(crear('span', null, PRODUCTOS[sku].nombre), crear('small', null, sku));
+            li.append(crear('span', null, nombreDeCodigo(codigo)), crear('small', null, codigo));
             return li;
         })
     );
@@ -240,12 +234,12 @@ function procesarCodigoBodega(textoDecodificado) {
         }
     }
     // ¿Es el código de un zapato?
-else if (PRODUCTOS[codigo]) {
+else if (esCodigoDeVariante(codigo)) {
     if (!pasilloAbierto) {
         mostrarToast('Primero escanea el código del pasillo');
     } else {
         // Buscamos si el zapato ya fue escaneado en esta sesión
-        const zapatoExistente = zapatosEscaneados.find(z => z.sku === codigo);
+        const zapatoExistente = zapatosEscaneados.find(z => z.codigo === codigo);
         
         if (zapatoExistente) {
             // Si ya existe, sumamos 1 a la cantidad
@@ -253,8 +247,8 @@ else if (PRODUCTOS[codigo]) {
             mostrarToast(`+1 agregado (${zapatoExistente.cantidad} en total)`);
         } else {
             // Si es nuevo, lo agregamos como objeto con cantidad inicial de 1
-            zapatosEscaneados.push({ sku: codigo, cantidad: 1 });
-            mostrarToast('Agregado: ' + PRODUCTOS[codigo].nombre);
+             zapatosEscaneados.push({ codigo, cantidad: 1 });
+            mostrarToast('Agregado: ' + nombreDeCodigo(codigo));
         }
         vibrar();
         reproducirBeep(); // Emite el sonido de caja registradora
@@ -276,15 +270,13 @@ function guardarPasillo() {
         return;
     }
 
-    // INSERT INTO productos_pasillo (sku, pasillo), sin repetir la llave (sku, pasillo)
-    zapatosEscaneados.forEach((sku) => {
-        const yaExiste = PRODUCTOS_PASILLO.some(
-            (r) => r.sku === sku && r.pasillo === pasilloAbierto
-        );
-        if (!yaExiste) PRODUCTOS_PASILLO.push({ sku, pasillo: pasilloAbierto });
+        // Por cada variante escaneada: suma al inventario (o la crea) y la asocia al pasillo
+    zapatosEscaneados.forEach(({ codigo, cantidad }) => {
+        registrarEntrada(codigo, cantidad);
+        asignarPasillo(codigo, pasilloAbierto);
     });
 
-    const n = zapatosEscaneados.length;
+        const n = totalEscaneados();
     console.log('Pasillo ' + pasilloAbierto + ' guardado:', zapatosEscaneados);
     mostrarToast('Pasillo ' + pasilloAbierto + ' guardado (' + n + (n === 1 ? ' zapato)' : ' zapatos)'));
 

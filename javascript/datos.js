@@ -83,19 +83,76 @@ const PASILLOS = {
     "PASILLO-D": "D"
 };
 
-/* Tabla productos_pasillo: registro inicial de zapatos en pasillos (bodega) */
-const PRODUCTOS_PASILLO = [
-    { sku: "7891011121314", pasillo: "B" },
-    { sku: "7891011121301", pasillo: "A" },
-    { sku: "7891011121302", pasillo: "C" },
-    { sku: "7891011121303", pasillo: "A" },
-    { sku: "7891011121304", pasillo: "B" },
-    { sku: "7891011121305", pasillo: "D" },
-    { sku: "7891011121306", pasillo: "B" },
-    { sku: "7891011121307", pasillo: "C" },
-    { sku: "7891011121308", pasillo: "B" },
-    { sku: "7891011121309", pasillo: "A" },
-    { sku: "7891011121310", pasillo: "A" },
-    { sku: "7891011121311", pasillo: "A" },
-    { sku: "7891011121312", pasillo: "D" }
-];
+/* Pasillo de cada modelo (igual que el SQL) */
+const PASILLO_POR_MODELO = {
+    "7891011121314": "B", "7891011121301": "A", "7891011121302": "C",
+    "7891011121303": "A", "7891011121304": "B", "7891011121305": "D",
+    "7891011121306": "B", "7891011121307": "C", "7891011121308": "B",
+    "7891011121309": "A", "7891011121310": "A", "7891011121311": "A",
+    "7891011121312": "D"
+};
+
+/* productos_pasillo por VARIANTE: { codigo_barra: "SKU-talla", pasillo: "A" } */
+const PRODUCTOS_PASILLO = [];
+Object.keys(PRODUCTOS).forEach((sku) => {
+    PRODUCTOS[sku].tallas.forEach(({ talla }) => {
+        PRODUCTOS_PASILLO.push({ codigo_barra: sku + '-' + talla, pasillo: PASILLO_POR_MODELO[sku] });
+    });
+});
+
+/* "7891011121301-40" -> { sku, talla: 40 } | "7891011121301" -> { sku, talla: null } | otro -> null */
+function parsearCodigo(codigo) {
+    const m = /^(\d{13})(?:-(\d{1,2}))?$/.exec(String(codigo).trim());
+    if (!m) return null;
+    return { sku: m[1], talla: m[2] ? Number(m[2]) : null };
+}
+
+function esCodigoDeVariante(codigo) {
+    const datos = parsearCodigo(codigo);
+    return datos !== null && datos.talla !== null;
+}
+
+/* ¿Existe el código? No modifica nada */
+function existeCodigo(codigo) {
+    const datos = parsearCodigo(codigo);
+    if (!datos || !PRODUCTOS[datos.sku]) return false;
+    if (datos.talla === null) return true;
+    return PRODUCTOS[datos.sku].tallas.some((t) => t.talla === datos.talla);
+}
+
+function nombreDeCodigo(codigo) {
+    const datos = parsearCodigo(codigo);
+    return datos && PRODUCTOS[datos.sku] ? PRODUCTOS[datos.sku].nombre : 'Producto nuevo';
+}
+
+/* Revisa si existe y decide: sumar, agregar talla nueva o crear producto nuevo */
+function registrarEntrada(codigo, cantidad = 1) {
+    if (!esCodigoDeVariante(codigo) || !(cantidad > 0)) {
+        return { estado: 'invalido', codigo };
+    }
+    const { sku, talla } = parsearCodigo(codigo);
+
+    if (!PRODUCTOS[sku]) {
+        PRODUCTOS[sku] = { nombre: 'Producto nuevo ' + sku, marca: 'Sin definir', tallas: [{ talla, cantidad }] };
+        return { estado: 'producto-nuevo', codigo, cantidad };
+    }
+    const fila = PRODUCTOS[sku].tallas.find((t) => t.talla === talla);
+    if (fila) {
+        fila.cantidad += cantidad;
+        return { estado: 'sumado', codigo, cantidad: fila.cantidad };
+    }
+    PRODUCTOS[sku].tallas.push({ talla, cantidad });
+    return { estado: 'talla-nueva', codigo, cantidad };
+}
+
+function asignarPasillo(codigo, pasillo) {
+    const yaExiste = PRODUCTOS_PASILLO.some((r) => r.codigo_barra === codigo && r.pasillo === pasillo);
+    if (!yaExiste) PRODUCTOS_PASILLO.push({ codigo_barra: codigo, pasillo });
+}
+
+function pasilloDeModelo(sku) {
+    const letras = [...new Set(
+        PRODUCTOS_PASILLO.filter((r) => r.codigo_barra.startsWith(sku + '-')).map((r) => r.pasillo)
+    )].sort();
+    return letras.length ? letras.join(', ') : 'Sin asignar';
+}
