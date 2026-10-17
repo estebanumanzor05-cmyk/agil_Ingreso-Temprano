@@ -22,6 +22,7 @@ function mostrarVista(vistaVisible) {
     vistaEscaner.classList.add('hidden');
     vistaResultados.classList.add('hidden');
     vistaEscanerBodega.classList.add('hidden');
+    document.getElementById('vista-admin').classList.add('hidden');
 
     vistaVisible.classList.remove('hidden');
     document.body.classList.toggle('modo-bodega', vistaVisible === vistaEscanerBodega);
@@ -277,6 +278,7 @@ function guardarPasillo() {
     });
 
         const n = totalEscaneados();
+    persistirDatos(); // guarda el inventario actualizado (admin.js)
     console.log('Pasillo ' + pasilloAbierto + ' guardado:', zapatosEscaneados);
     mostrarToast('Pasillo ' + pasilloAbierto + ' guardado (' + n + (n === 1 ? ' zapato)' : ' zapatos)'));
 

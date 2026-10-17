@@ -34,6 +34,16 @@
             </div>
             <span>Bodega</span>
         </button>
+
+        <button id="btn-admin" class="module-btn btn-admin">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg">
+                <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+                <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+                <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+            <span>Administrador</span>
+        </button>
     </main>
 
     <!-- VISTA 2: ESCÁNER DE ZAPATERÍA (Oculta por defecto) -->
@@ -78,6 +88,51 @@
         <button id="btn-guardar-bodega" class="btn-save-float">Guardar</button>
     </main>
 
+    <!-- VISTA 5: ADMINISTRADOR (Oculta por defecto) -->
+    <!-- Agregar/borrar productos y tallas, subir/bajar cantidades. La lógica está en admin.js -->
+    <main id="vista-admin" class="view-container hidden">
+        <div class="admin-ui">
+            <h2 class="admin-title">Administrar inventario</h2>
+            <p id="admin-resumen" class="admin-resumen"></p>
+
+            <input type="search" id="admin-buscar" class="admin-input" placeholder="Buscar por nombre, marca o SKU">
+
+            <details id="admin-nuevo" class="admin-nuevo">
+                <summary>+ Agregar producto nuevo</summary>
+                <form id="form-nuevo-producto" class="admin-form" autocomplete="off">
+                    <label class="full">SKU (13 dígitos)
+                        <input class="admin-input" name="sku" inputmode="numeric" pattern="\d{13}" maxlength="13" required>
+                    </label>
+                    <label class="full">Nombre
+                        <input class="admin-input" name="nombre" maxlength="100" required>
+                    </label>
+                    <label>Marca
+                        <input class="admin-input" name="marca" maxlength="50" required>
+                    </label>
+                    <label>Pasillo
+                        <select class="admin-input" name="pasillo" required>
+                            <option value="A">A</option><option value="B">B</option>
+                            <option value="C">C</option><option value="D">D</option>
+                        </select>
+                    </label>
+                    <label>Talla inicial
+                        <input class="admin-input" name="talla" type="number" min="1" max="99" inputmode="numeric" required>
+                    </label>
+                    <label>Cantidad
+                        <input class="admin-input" name="cantidad" type="number" min="0" inputmode="numeric" value="1" required>
+                    </label>
+                    <button type="submit" class="admin-btn-agregar full">Guardar producto</button>
+                </form>
+            </details>
+
+            <div id="admin-lista"></div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="btn-admin-inicio" class="btn-secondary">Volver al Inicio</button>
+        </div>
+    </main>
+
     <div id="notificacion-toast" class="toast hidden">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="toast-icon">
             <polyline points="20 6 9 17 4 12"></polyline>
@@ -88,5 +143,6 @@
     <script src="javascript/datos.js"></script>
     <script src="javascript/escaner.js"></script>
     <script src="javascript/script.js"></script>
+    <script src="javascript/admin.js"></script>
 </body>
 </html>
