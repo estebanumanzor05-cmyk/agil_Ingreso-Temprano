@@ -13,37 +13,49 @@
 
 const CLAVE_LOCAL = 'adoc_inventario_v1';
 
-/* ---------------------------------------------------------------------
-   PERSISTENCIA (localStorage)
-   --------------------------------------------------------------------- */
-function persistirDatos() {
+/* PERSISTENCIA (Servidor SQL + respaldo en localStorage) */
+async function persistirDatos() {
+    const payload = {
+        productos: PRODUCTOS,
+        productosPasillo: PRODUCTOS_PASILLO
+    };
     try {
-        localStorage.setItem(CLAVE_LOCAL, JSON.stringify({
-            productos: PRODUCTOS,
-            productosPasillo: PRODUCTOS_PASILLO
-        }));
+        localStorage.setItem(CLAVE_LOCAL, JSON.stringify(payload));
+        await fetch('/api/inventario', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
     } catch (error) {
-        console.warn('No se pudo guardar el inventario en el navegador: ', error);
+        console.warn('No se pudo sincronizar con el servidor: ', error);
     }
 }
 
-function restaurarDatos() {
+async function restaurarDatos() {
     try {
-        const crudo = localStorage.getItem(CLAVE_LOCAL);
-        if (!crudo) return;
-        const guardado = JSON.parse(crudo);
+        const respuesta = await fetch('/api/inventario');
+        if (!respuesta.ok) throw new Error('Error al consultar API');
+        const guardado = await respuesta.json();
+
         if (!guardado || typeof guardado.productos !== 'object' || !Array.isArray(guardado.productosPasillo)) return;
 
-        // Se modifican los objetos originales (son const) en lugar de reemplazarlos
+        // Se actualizan los objetos globales con los datos de la base de datos SQL
         Object.keys(PRODUCTOS).forEach((sku) => delete PRODUCTOS[sku]);
         Object.assign(PRODUCTOS, guardado.productos);
         PRODUCTOS_PASILLO.length = 0;
         PRODUCTOS_PASILLO.push(...guardado.productosPasillo);
+
+        if (typeof renderAdmin === 'function') renderAdmin();
     } catch (error) {
-        console.warn('Inventario guardado ilegible, se usan los datos de prueba: ', error);
+        console.warn('Usando datos locales mientras responde el servidor: ', error);
     }
 }
+
 restaurarDatos();
+// Sincronización
+document.getElementById('btn-zapateria').addEventListener('click', restaurarDatos);
+document.getElementById('btn-bodega').addEventListener('click', restaurarDatos);
+document.getElementById('btn-admin').addEventListener('click', restaurarDatos);
 
 /* ---------------------------------------------------------------------
    OPERACIONES SOBRE LOS DATOS
