@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ADOC Inventario - MVP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/estilos.css">
+    <!-- ZXing: decodifica los códigos de barra (versión fija para que una actualización no rompa la app) -->
+    <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+    
+</head>
+<body>
+    <!-- Cabecera / Logotipo -->
+    <header class="app-header">
+        <img src="img/ADOC logo.png" alt="Logotipo ADOC" class="logo-img">
+    </header>
+
+    <!-- VISTA 1: MENÚ PRINCIPAL -->
+    <main id="vista-menu" class="view-container main-menu">
+        <button id="btn-zapateria" class="module-btn btn-yellow">
+            <div class="icon-wrapper">
+                <img src="img/zapateria.png" alt="Ícono de Zapatería" class="icon-img">
+            </div>
+            <span>Zapatería</span>
+        </button>
+
+        <button id="btn-bodega" class="module-btn btn-black">
+            <div class="icon-wrapper camera-bg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+            </div>
+            <span>Bodega</span>
+        </button>
+
+        <button id="btn-admin" class="module-btn btn-admin">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg">
+                <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+                <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+                <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+            <span>Administrador</span>
+        </button>
+    </main>
+
+    <!-- VISTA 2: ESCÁNER DE ZAPATERÍA (Oculta por defecto) -->
+    <main id="vista-escaner" class="view-container hidden">
+        <div class="scanner-ui">
+            <!-- escaner.js coloca aquí el video de la cámara y la zona de lectura -->
+            <div id="reader" class="scanner-frame"></div>
+            <p id="texto-escaner" class="scanner-text">Apunta al código de barras del zapato</p>
+        </div>
+
+        <div class="action-buttons">
+            <button id="btn-cancelar-escaner" class="btn-secondary">Cancelar</button>
+        </div>
+    </main>
+
+    <!-- VISTA 3: RESULTADOS DEL PRODUCTO (Oculta por defecto) -->
+    <!-- El contenido de la tarjeta lo genera script.js según el código escaneado -->
+    <main id="vista-resultados" class="view-container hidden">
+        <div id="tarjeta-producto" class="product-card"></div>
+
+        <div class="action-buttons">
+            <button id="btn-nuevo-escaner" class="btn-primary">Escanear Otro</button>
+            <button id="btn-inicio" class="btn-secondary">Volver al Inicio</button>
+        </div>
+    </main>
+
+    <!-- VISTA 4: ESCÁNER DE BODEGA (Oculta por defecto) -->
+    <!-- Paso 1: escanear el código del pasillo (lo "abre").
+         Paso 2: escanear los zapatos, que quedan registrados en ese pasillo. -->
+    <main id="vista-escaner-bodega" class="view-container hidden">
+        <div class="scanner-ui bodega-ui">
+            <div id="reader-bodega" class="scanner-frame"></div>
+
+            <div class="pasillo-actual">
+                Pasillo: <strong id="pasillo-actual">—</strong>
+            </div>
+            <p id="texto-bodega" class="scanner-text">Escanea el código del pasillo</p>
+            <ul id="lista-bodega" class="lista-bodega"></ul>
+        </div>
+        
+        <button id="btn-cancelar-bodega" class="btn-cancel-float">Cancelar</button>
+        <button id="btn-guardar-bodega" class="btn-save-float">Guardar</button>
+    </main>
+
+    <!-- VISTA 5: ADMINISTRADOR (Oculta por defecto) -->
+    <!-- Agregar/borrar productos y tallas, subir/bajar cantidades. La lógica está en admin.js -->
+    <main id="vista-admin" class="view-container hidden">
+        <div class="admin-ui">
+            <h2 class="admin-title">Administrar inventario</h2>
+            <p id="admin-resumen" class="admin-resumen"></p>
+
+            <input type="search" id="admin-buscar" class="admin-input" placeholder="Buscar por nombre, marca o SKU">
+
+            <details id="admin-nuevo" class="admin-nuevo">
+                <summary>+ Agregar producto nuevo</summary>
+                <form id="form-nuevo-producto" class="admin-form" autocomplete="off">
+                    <label class="full">SKU (13 dígitos)
+                        <input class="admin-input" name="sku" inputmode="numeric" pattern="\d{13}" maxlength="13" required>
+                    </label>
+                    <label class="full">Nombre
+                        <input class="admin-input" name="nombre" maxlength="100" required>
+                    </label>
+                    <label>Marca
+                        <input class="admin-input" name="marca" maxlength="50" required>
+                    </label>
+                    <label>Pasillo
+                        <select class="admin-input" name="pasillo" required>
+                            <option value="A">A</option><option value="B">B</option>
+                            <option value="C">C</option><option value="D">D</option>
+                        </select>
+                    </label>
+                    <label>Talla inicial
+                        <input class="admin-input" name="talla" type="number" min="1" max="99" inputmode="numeric" required>
+                    </label>
+                    <label>Cantidad
+                        <input class="admin-input" name="cantidad" type="number" min="0" inputmode="numeric" value="1" required>
+                    </label>
+                    <button type="submit" class="admin-btn-agregar full">Guardar producto</button>
+                </form>
+            </details>
+
+            <div id="admin-lista"></div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="btn-admin-inicio" class="btn-secondary">Volver al Inicio</button>
+        </div>
+    </main>
+
+    <div id="notificacion-toast" class="toast hidden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="toast-icon">
+            <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>¡Inventario del pasillo guardado!</span>
+    </div>
+
+    <script src="javascript/datos.js"></script>
+    <script src="javascript/escaner.js"></script>
+    <script src="javascript/script.js"></script>
+    <script src="javascript/admin.js"></script>
+</body>
+</html>
