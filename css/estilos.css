@@ -1,0 +1,736 @@
+:root {
+    --adoc-black: #000000;
+    --adoc-yellow: #FFF000; 
+    --adoc-white: #FFFFFF;
+    --border-color: #E5E5E5;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent; 
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--adoc-white);
+    color: var(--adoc-black);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Ocupa toda la altura de la pantalla del celular */
+}
+
+
+.app-header {
+    width: 100%;
+    padding: 24px 0;
+    text-align: center;
+    border-bottom: 3px solid black;
+    background-color: var(--adoc-white);
+}
+
+.logo-img {
+    width: 100%;
+    max-width: 320px; 
+    height: auto;
+    display: inline-block;
+}
+
+.main-menu {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center;
+    padding: 24px;
+    gap: 32px; 
+}
+
+
+.module-btn {
+    width: 100%;
+    max-width: 320px;
+    aspect-ratio: 1;
+    margin: 0 auto; /* ESTO FUERZA EL CENTRADO ABSOLUTO */
+    border: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    font-size: 32px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: transform 0.1s ease-in-out;
+}
+
+/* Efecto al presionar la pantalla */
+.module-btn:active {
+    transform: scale(0.97);
+}
+
+
+.btn-yellow {
+    background-color: var(--adoc-yellow);
+    color: var(--adoc-black);
+}
+
+.btn-black {
+    background-color: var(--adoc-black);
+    color: var(--adoc-white);
+}
+
+.icon-wrapper {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.camera-bg {
+    background-color: var(--adoc-white);
+    border-radius: 24px;
+}
+
+.icon-svg {
+    width: 60px;
+    height: 60px;
+}
+
+/*ICONO DE PRODUCTO*/
+.icon-img {
+    width: 180px; 
+    height: auto;
+    object-fit: contain; 
+}
+
+.view-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Regla maestra para ocultar vistas en la SPA */
+.hidden {
+    display: none !important;
+}
+
+#vista-escaner {
+    background-color: #1a1a1a; /* Fondo oscuro detrás de la cámara */
+    justify-content: space-between;
+}
+
+.scanner-ui {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+}
+
+/* Contenedor del video de la cámara (lo llena escaner.js) */
+.scanner-frame {
+    width: 100%;
+    max-width: 400px;
+    min-height: 220px;
+    border: 4px solid var(--adoc-yellow);
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #000;
+    position: relative;
+}
+
+.video-camara {
+    width: 100%;
+    display: block;
+}
+
+/* Franja central donde se busca el código. Debe coincidir con
+   ZONA_ANCHO (90%) y ZONA_ALTO (40%) de escaner.js */
+.zona-lectura {
+    position: absolute;
+    left: 5%;
+    right: 5%;
+    top: 30%;
+    bottom: 30%;
+    border: 2px solid var(--adoc-white);
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); 
+    display: none;
+}
+
+.camara-activa .zona-lectura {
+    display: block;
+}
+
+/* Línea láser animada dentro de la zona de lectura */
+.laser {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: red;
+    box-shadow: 0 0 10px red;
+    animation: scan 2s infinite linear;
+}
+
+@keyframes scan {
+    0% { top: 0; }
+    50% { top: 100%; }
+    100% { top: 0; }
+}
+
+.scanner-text {
+    color: var(--adoc-white);
+    margin-top: 24px;
+    font-size: 16px;
+    text-align: center;
+}
+
+#vista-resultados {
+    padding: 24px;
+    background-color: #F8F8F8;
+}
+
+.product-card {
+    background-color: var(--adoc-white);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    margin-bottom: 24px;
+}
+
+.product-title {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.product-brand {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.product-sku {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+/* Tarjeta cuando el código escaneado no existe en el inventario */
+.not-found {
+    text-align: center;
+}
+
+.not-found-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background-color: #EF9A9A;
+    color: #7F0000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 700;
+}
+
+.not-found p {
+    color: #444;
+    margin-top: 8px;
+    line-height: 1.4;
+}
+
+.codigo-leido {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 6px 12px;
+    background-color: #F0F0F0;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 16px;
+    word-break: break-all;
+}
+
+.location-badge {
+    background-color: var(--adoc-yellow);
+    color: var(--adoc-black);
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 24px;
+    font-size: 18px;
+}
+
+.stock-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 8px;
+}
+.stock-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 16px; 
+    justify-content: center; 
+}
+
+.stock-item {
+    padding: 16px 12px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column; 
+    align-items: center;   
+    justify-content: center;
+    text-align: center;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+}
+
+.stock-item strong {
+    font-size: 20px;
+    margin-top: 4px; 
+}
+
+.stock-0 {
+    background-color: #EF9A9A;
+    color: #7F0000;
+    border: 1px solid #FFCDD2;
+}
+
+.stock-1-2 {
+    background-color: #FFCC80;
+    color: #993300;
+    border: 1px solid #FFE0B2;
+}
+
+.stock-3-4 {
+    background-color: #FFF59D;
+    color: #665200; 
+    border: 1px solid #FFF59D;
+}
+
+.stock-5 {
+    background-color: #A5D6A7;
+    color: #1B5E20;
+    border: 1px solid #C8E6C9;
+}
+
+/*BOTONES DE ACCION*/
+.action-buttons {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background-color: var(--adoc-white);
+}
+
+.btn-primary, .btn-secondary {
+    width: 100%;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: var(--adoc-black);
+    color: var(--adoc-white);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--adoc-black);
+    border: 2px solid var(--border-color);
+}
+
+
+#vista-escaner-bodega {
+    background-color: #1a1a1a;
+    position: relative;
+}
+
+/* Deja espacio abajo para los botones flotantes */
+.bodega-ui {
+    justify-content: flex-start;
+    padding-bottom: 110px;
+}
+
+.pasillo-actual {
+    margin-top: 16px;
+    padding: 10px 24px;
+    border-radius: 50px;
+    background-color: #333;
+    color: var(--adoc-white);
+    font-size: 18px;
+}
+
+.pasillo-actual.abierto {
+    background-color: var(--adoc-yellow);
+    color: var(--adoc-black);
+}
+
+#vista-escaner-bodega .scanner-text {
+    margin-top: 12px;
+}
+
+/* Zapatos escaneados en el pasillo abierto */
+.lista-bodega {
+    list-style: none;
+    width: 100%;
+    max-width: 400px;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lista-bodega li {
+    background-color: var(--adoc-white);
+    color: var(--adoc-black);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 15px;
+}
+
+.lista-bodega li small {
+    color: #666;
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.btn-save-float {
+    position: absolute;
+    bottom: 32px;
+    right: 24px;
+    background-color: var(--adoc-yellow);
+    color: var(--adoc-black);
+    border: none;
+    padding: 16px 32px;
+    border-radius: 50px; 
+    font-size: 18px;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5); 
+    cursor: pointer;
+}
+
+.btn-cancel-float {
+    position: absolute;
+    bottom: 32px;
+    left: 24px;
+    background-color: transparent;
+    color: var(--adoc-white);
+    border: none;
+    padding: 16px;
+    font-size: 16px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--adoc-black);
+    color: var(--adoc-white);
+    padding: 16px 24px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 1000; 
+    font-weight: 600;
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease, bottom 0.3s ease;
+}
+
+.toast.show {
+    opacity: 1;
+    bottom: 40px;
+    display: flex !important;
+}
+
+.toast {
+    width: max-content;
+    max-width: calc(100vw - 32px);
+}
+
+/* En bodega el aviso va más arriba para no tapar Cancelar y Guardar */
+.modo-bodega .toast {
+    bottom: 100px;
+}
+
+.modo-bodega .toast.show {
+    bottom: 112px;
+}
+.toast-icon {
+    width: 24px;
+    height: 24px;
+    stroke: var(--adoc-yellow); 
+}
+
+/*Ubicación de pasillo - Sprint 2*/
+.location-badge {
+    background-color: var(--adoc-yellow);
+    color: var(--adoc-black);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    margin: 16px 0;
+    font-size: 18px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.location-badge svg {
+    width: 24px;
+    height: 24px;
+    margin-right: 12px;
+}
+
+/* =====================================================================
+   MÓDULO ADMINISTRADOR
+   ===================================================================== */
+.btn-admin {
+    aspect-ratio: auto;
+    flex-direction: row;
+    gap: 14px;
+    padding: 22px 16px;
+    font-size: 24px;
+    background-color: var(--adoc-white);
+    color: var(--adoc-black);
+    border: 3px solid var(--adoc-black);
+}
+
+.btn-admin .icon-svg {
+    width: 32px;
+    height: 32px;
+}
+
+#vista-admin {
+    background-color: #F8F8F8;
+}
+
+.admin-ui {
+    flex: 1;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-title {
+    font-size: 22px;
+}
+
+.admin-resumen {
+    color: #666;
+    font-size: 14px;
+    margin-top: -6px;
+}
+
+.admin-input {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    color: var(--adoc-black);
+    background-color: var(--adoc-white);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.admin-input:focus,
+.admin-cantidad:focus {
+    outline: none;
+    border-color: var(--adoc-black);
+}
+
+/* Formulario de producto nuevo */
+.admin-nuevo {
+    background-color: var(--adoc-white);
+    border: 2px solid var(--adoc-black);
+    border-radius: 12px;
+}
+
+.admin-nuevo > summary {
+    padding: 14px 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0 16px 16px;
+}
+
+.admin-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+}
+
+.admin-form .full {
+    grid-column: 1 / -1;
+}
+
+.admin-btn-agregar {
+    padding: 14px 16px;
+    background-color: var(--adoc-black);
+    color: var(--adoc-white);
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+}
+
+/* Lista de productos */
+.admin-producto {
+    background-color: var(--adoc-white);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 4px;
+    overflow: hidden;
+}
+
+.admin-producto > summary {
+    padding: 14px 16px;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.admin-producto > summary::-webkit-details-marker {
+    display: none;
+}
+
+.admin-producto[open] > summary {
+    background-color: var(--adoc-yellow);
+}
+
+.admin-producto-nombre {
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.admin-producto-info {
+    color: #555;
+    font-size: 13px;
+}
+
+.admin-producto-cuerpo {
+    padding: 16px;
+}
+
+.admin-talla {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+}
+
+.admin-talla-nombre {
+    flex: 1;
+    font-weight: 600;
+}
+
+.admin-mas-menos {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--adoc-black);
+    color: var(--adoc-white);
+    font-size: 22px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-mas-menos:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.admin-cantidad {
+    width: 64px;
+    height: 40px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--adoc-white);
+    border: 2px solid rgba(0,0,0,0.2);
+    border-radius: 8px;
+}
+
+.admin-borrar-talla {
+    width: 36px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    color: #7F0000;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.admin-form-talla {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.admin-form-talla .admin-btn-agregar {
+    grid-column: 1 / -1;
+}
+
+.admin-borrar-producto {
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    background: transparent;
+    color: #7F0000;
+    border: 2px solid #EF9A9A;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+}
+
+.admin-vacio {
+    color: #666;
+    text-align: center;
+    padding: 16px 0;
+}
