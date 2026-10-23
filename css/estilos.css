@@ -503,6 +503,14 @@ body {
     width: 24px;
     height: 24px;
     margin-right: 12px;
+    flex-shrink: 0;
+}
+
+/* Producto que existe pero no está registrado en ningún pasillo */
+.location-badge.sin-pasillo {
+    background-color: #FFCC80;
+    color: #993300;
+    font-size: 16px;
 }
 
 /* =====================================================================

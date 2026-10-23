@@ -93,8 +93,16 @@ function mostrarProducto(codigo, producto) {
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
             <circle cx="12" cy="10" r="3"></circle>
         </svg>
-        <span>Ubicación: <strong>Pasillo ${ubicacion}</strong></span>
+        <span></span>
     `;
+    const textoUbicacion = badgeUbicacion.querySelector('span');
+    if (ubicacion === 'Sin asignar') {
+        // El producto existe en el inventario, pero nadie lo ha registrado en un pasillo
+        badgeUbicacion.classList.add('sin-pasillo');
+        textoUbicacion.textContent = 'Este producto no ha sido registrado en ningún pasillo';
+    } else {
+        textoUbicacion.append('Ubicación: ', crear('strong', null, 'Pasillo ' + ubicacion));
+    }
     tarjetaProducto.append(badgeUbicacion);
 
     // 4. Grid de disponibilidad (Se mantiene para la transición de la BD)
@@ -119,23 +127,29 @@ function mostrarProducto(codigo, producto) {
 
 function mostrarNoEncontrado(codigo) {
     const contenedor = crear('div', 'not-found');
-    contenedor.append(
-        crear('div', 'not-found-icon', '!'),
-        crear('h2', 'product-title', 'Producto no encontrado')
-    );
+    contenedor.append(crear('div', 'not-found-icon', '!'));
 
     if (PASILLOS[codigo]) {
         // Se escaneó la etiqueta de un pasillo en el módulo de zapatería
         contenedor.append(
+            crear('h2', 'product-title', 'Código de pasillo'),
             crear('p', null, 'Este es el código del Pasillo ' + PASILLOS[codigo] + '. Los pasillos se escanean en el módulo Bodega.')
         );
-    } else {
+    } else if (parsearCodigo(codigo)) {
+        // Tiene el formato de ADOC (SKU o SKU-talla) pero no está en el inventario
         contenedor.append(
-            crear('p', null, 'El código escaneado no está registrado en el inventario.')
+            crear('h2', 'product-title', 'Producto no encontrado'),
+            crear('p', null, 'El código escaneado no está registrado en el inventario.'),
+            crear('span', 'codigo-leido', codigo)
+        );
+    } else {
+        // Código de otra tienda o etiqueta: no se muestra su contenido
+        contenedor.append(
+            crear('h2', 'product-title', 'Código no válido'),
+            crear('p', null, 'Este código de barras no pertenece al inventario de ADOC y no se puede usar.')
         );
     }
 
-    contenedor.append(crear('span', 'codigo-leido', codigo));
     tarjetaProducto.replaceChildren(contenedor);
 }
 
@@ -255,7 +269,10 @@ else if (esCodigoDeVariante(codigo)) {
         reproducirBeep(); // Emite el sonido de caja registradora
     }
 } else {
-        mostrarToast('Código no registrado: ' + codigo);
+        // No es pasillo ni zapato con talla: no se muestra el contenido del código
+        mostrarToast(parsearCodigo(codigo)
+            ? 'Escanea el código de la talla, no el del modelo'
+            : 'Código no válido: no pertenece a ADOC');
     }
 
     actualizarPantallaBodega();
