@@ -75,6 +75,15 @@ const PRODUCTOS = {
     }
 };
 
+/* Catálogo de modelos: nombre y marca de los modelos que tienen etiqueta impresa.
+   Es una copia hecha al cargar la página, ANTES de que se traiga el inventario del
+   servidor. Así, aunque el administrador deje el inventario vacío, Bodega sigue
+   sabiendo cómo se llama cada modelo cuando se escanea y se registra por primera vez. */
+const CATALOGO_MODELOS = {};
+Object.keys(PRODUCTOS).forEach((sku) => {
+    CATALOGO_MODELOS[sku] = { nombre: PRODUCTOS[sku].nombre, marca: PRODUCTOS[sku].marca };
+});
+
 /* Tabla pasillos: texto del código de barra -> letra del pasillo */
 const PASILLOS = {
     "PASILLO-A": "A",
@@ -122,7 +131,10 @@ function existeCodigo(codigo) {
 
 function nombreDeCodigo(codigo) {
     const datos = parsearCodigo(codigo);
-    return datos && PRODUCTOS[datos.sku] ? PRODUCTOS[datos.sku].nombre : 'Producto nuevo';
+    if (!datos) return 'Producto nuevo';
+    if (PRODUCTOS[datos.sku]) return PRODUCTOS[datos.sku].nombre;      // está en el inventario
+    if (CATALOGO_MODELOS[datos.sku]) return CATALOGO_MODELOS[datos.sku].nombre; // inventario vacío, pero se conoce el modelo
+    return 'Producto nuevo';                                            // modelo desconocido
 }
 
 /* Revisa si existe y decide: sumar, agregar talla nueva o crear producto nuevo */
@@ -133,7 +145,12 @@ function registrarEntrada(codigo, cantidad = 1) {
     const { sku, talla } = parsearCodigo(codigo);
 
     if (!PRODUCTOS[sku]) {
-        PRODUCTOS[sku] = { nombre: 'Producto nuevo ' + sku, marca: 'Sin definir', tallas: [{ talla, cantidad }] };
+        const modelo = CATALOGO_MODELOS[sku];
+        PRODUCTOS[sku] = {
+            nombre: modelo ? modelo.nombre : 'Producto nuevo ' + sku,
+            marca: modelo ? modelo.marca : 'Sin definir',
+            tallas: [{ talla, cantidad }]
+        };
         return { estado: 'producto-nuevo', codigo, cantidad };
     }
     const fila = PRODUCTOS[sku].tallas.find((t) => t.talla === talla);
