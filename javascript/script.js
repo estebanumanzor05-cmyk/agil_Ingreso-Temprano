@@ -79,7 +79,7 @@ function textoPares(cantidad) {
 function mostrarProducto(codigo, producto) {
     tarjetaProducto.replaceChildren();
 
-        // 1. El código puede ser de variante (SKU-talla): la tarjeta muestra el modelo
+    // 1. El código puede ser de variante (SKU-talla): la tarjeta muestra el modelo
     const sku = parsearCodigo(codigo).sku;
     const ubicacion = pasilloDeModelo(sku);
 
@@ -108,30 +108,36 @@ function mostrarProducto(codigo, producto) {
     }
     tarjetaProducto.append(badgeUbicacion);
 
-        // 4. Grid de disponibilidad + selección de talla para vender
+    // 4. Grid de disponibilidad: solo tallas con existencias
     const datosCodigo = parsearCodigo(codigo);
     ventaActual = { sku, talla: datosCodigo.talla };
 
     tarjetaProducto.append(crear('h3', 'stock-title', 'Disponibilidad en Bodega'));
-    const grid = crear('div', 'stock-grid');
 
-    [...producto.tallas]
-        .sort((a, b) => a.talla - b.talla)
-        .forEach(({ talla, cantidad }) => {
-            const item = crear('div', 'stock-item ' + claseStock(cantidad));
-            if (talla === ventaActual.talla) item.classList.add('seleccionada');
-            item.append(
-                crear('span', null, 'Talla ' + talla),
-                crear('strong', null, textoPares(cantidad))
-            );
-            item.addEventListener('click', () => {
-                ventaActual.talla = talla;
-                grid.querySelectorAll('.stock-item').forEach((el) => el.classList.remove('seleccionada'));
-                item.classList.add('seleccionada');
-                actualizarBotonVenta();
-            });
-            grid.append(item);
+    const tallasConStock = producto.tallas
+        .filter((t) => t.cantidad > 0)
+        .sort((a, b) => a.talla - b.talla);
+
+    if (tallasConStock.length === 0) {
+        tarjetaProducto.append(crear('p', 'admin-vacio', 'Sin existencias registradas de este modelo.'));
+    }
+
+    const grid = crear('div', 'stock-grid');
+    tallasConStock.forEach(({ talla, cantidad }) => {
+        const item = crear('div', 'stock-item ' + claseStock(cantidad));
+        if (talla === ventaActual.talla) item.classList.add('seleccionada');
+        item.append(
+            crear('span', null, 'Talla ' + talla),
+            crear('strong', null, textoPares(cantidad))
+        );
+        item.addEventListener('click', () => {
+            ventaActual.talla = talla;
+            grid.querySelectorAll('.stock-item').forEach((el) => el.classList.remove('seleccionada'));
+            item.classList.add('seleccionada');
+            actualizarBotonVenta();
         });
+        grid.append(item);
+    });
     tarjetaProducto.append(grid);
 
     const btnVender = crear('button', 'btn-venta');
@@ -152,7 +158,7 @@ function actualizarBotonVenta() {
         btn.textContent = 'Toca la talla vendida';
         btn.disabled = true;
     } else if (fila.cantidad <= 0) {
-        btn.textContent = 'Talla ' + ventaActual.talla + ': sin stock';
+        btn.textContent = 'Talla ' + ventaActual.talla + ' agotada';
         btn.disabled = true;
     } else {
         btn.textContent = 'Registrar venta · Talla ' + ventaActual.talla + ' (−1 par)';
@@ -175,22 +181,25 @@ async function registrarVenta() {
             return;
         }
         if (fila.cantidad <= 0) {
-            mostrarToast('Talla ' + talla + ' sin stock: no se puede vender', 2500);
-            mostrarProducto(sku + '-' + talla, PRODUCTOS[sku]);
+            mostrarToast('Talla ' + talla + ' agotada: no se puede vender', 2500);
+            mostrarProducto(sku, PRODUCTOS[sku]); // sin talla seleccionada
             return;
         }
 
         const resultado = adminCambiarCantidad(sku, talla, -1); // Math.max(0, cantidad - 1) + persistirDatos()
         vibrar();
         reproducirBeep();
-        mostrarToast('Venta registrada · ' + resultado.mensaje);
-        mostrarProducto(sku + '-' + talla, PRODUCTOS[sku]); // refresca el grid
+        const quedan = PRODUCTOS[sku].tallas.find((t) => t.talla === talla).cantidad;
+        mostrarToast(quedan > 0
+            ? 'Venta registrada · ' + resultado.mensaje
+            : 'Venta registrada · Talla ' + talla + ' agotada');
+        // Si aún quedan pares, la talla sigue seleccionada; si no, desaparece del grid
+        mostrarProducto(quedan > 0 ? sku + '-' + talla : sku, PRODUCTOS[sku]);
     } finally {
         ventaEnCurso = false;
     }
 }
 
-    
 
 function mostrarNoEncontrado(codigo) {
     const contenedor = crear('div', 'not-found');
@@ -243,6 +252,7 @@ async function procesarCodigoZapateria(textoDecodificado) {
     window.scrollTo(0, 0);
 }
 
+
 /* =====================================================================
    BODEGA: REGISTRO DE ZAPATOS POR PASILLO
    1. Se escanea el código de un pasillo (PASILLO-A ... PASILLO-D) y
@@ -285,7 +295,7 @@ function actualizarPantallaBodega() {
 
     // El último escaneado aparece primero
     listaBodega.replaceChildren(
-                ...[...zapatosEscaneados].reverse().map(({ codigo }) => {
+        ...[...zapatosEscaneados].reverse().map(({ codigo }) => {
             const li = crear('li');
             li.append(crear('span', null, nombreDeCodigo(codigo)), crear('small', null, codigo));
             return li;
@@ -317,26 +327,26 @@ function procesarCodigoBodega(textoDecodificado) {
         }
     }
     // ¿Es el código de un zapato?
-else if (esCodigoDeVariante(codigo)) {
-    if (!pasilloAbierto) {
-        mostrarToast('Primero escanea el código del pasillo');
-    } else {
-        // Buscamos si el zapato ya fue escaneado en esta sesión
-        const zapatoExistente = zapatosEscaneados.find(z => z.codigo === codigo);
-        
-        if (zapatoExistente) {
-            // Si ya existe, sumamos 1 a la cantidad
-            zapatoExistente.cantidad += 1;
-            mostrarToast(`+1 agregado (${zapatoExistente.cantidad} en total)`);
+    else if (esCodigoDeVariante(codigo)) {
+        if (!pasilloAbierto) {
+            mostrarToast('Primero escanea el código del pasillo');
         } else {
-            // Si es nuevo, lo agregamos como objeto con cantidad inicial de 1
-             zapatosEscaneados.push({ codigo, cantidad: 1 });
-            mostrarToast('Agregado: ' + nombreDeCodigo(codigo));
+            // Buscamos si el zapato ya fue escaneado en esta sesión
+            const zapatoExistente = zapatosEscaneados.find(z => z.codigo === codigo);
+
+            if (zapatoExistente) {
+                // Si ya existe, sumamos 1 a la cantidad
+                zapatoExistente.cantidad += 1;
+                mostrarToast(`+1 agregado (${zapatoExistente.cantidad} en total)`);
+            } else {
+                // Si es nuevo, lo agregamos como objeto con cantidad inicial de 1
+                zapatosEscaneados.push({ codigo, cantidad: 1 });
+                mostrarToast('Agregado: ' + nombreDeCodigo(codigo));
+            }
+            vibrar();
+            reproducirBeep(); // Emite el sonido de caja registradora
         }
-        vibrar();
-        reproducirBeep(); // Emite el sonido de caja registradora
-    }
-} else {
+    } else {
         // No es pasillo ni zapato con talla: no se muestra el contenido del código
         mostrarToast(parsearCodigo(codigo)
             ? 'Escanea el código de la talla, no el del modelo'
@@ -356,13 +366,13 @@ function guardarPasillo() {
         return;
     }
 
-        // Por cada variante escaneada: suma al inventario (o la crea) y la asocia al pasillo
+    // Por cada variante escaneada: suma al inventario (o la crea) y la asocia al pasillo
     zapatosEscaneados.forEach(({ codigo, cantidad }) => {
         registrarEntrada(codigo, cantidad);
         asignarPasillo(codigo, pasilloAbierto);
     });
 
-        const n = totalEscaneados();
+    const n = totalEscaneados();
     persistirDatos(); // guarda el inventario actualizado (admin.js)
     console.log('Pasillo ' + pasilloAbierto + ' guardado:', zapatosEscaneados);
     mostrarToast('Pasillo ' + pasilloAbierto + ' guardado (' + n + (n === 1 ? ' zapato)' : ' zapatos)'));
@@ -455,7 +465,7 @@ function reproducirBeep() {
     // Configuración del sonido (Tono agudo y corto)
     oscilador.type = 'sine';
     oscilador.frequency.setValueAtTime(800, audioCtx.currentTime); // 800Hz
-    
+
     // Volumen (Baja rápidamente para hacer el efecto "beep")
     ganancia.gain.setValueAtTime(1, audioCtx.currentTime);
     ganancia.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);

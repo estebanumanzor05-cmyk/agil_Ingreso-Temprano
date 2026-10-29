@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ADOC Inventario - MVP</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="css/estilos.css?v=3">
     <!-- ZXing: decodifica los códigos de barra (versión fija para que una actualización no rompa la app) -->
     <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
     
@@ -60,7 +60,7 @@
     </main>
 
     <!-- VISTA 3: RESULTADOS DEL PRODUCTO (Oculta por defecto) -->
-    <!-- El contenido de la tarjeta lo genera script.js según el código escaneado -->
+    <!-- El contenido de la tarjeta (incluido el botón "Registrar venta") lo genera script.js según el código escaneado -->
     <main id="vista-resultados" class="view-container hidden">
         <div id="tarjeta-producto" class="product-card"></div>
 
@@ -119,7 +119,7 @@
                         <input class="admin-input" name="talla" type="number" min="1" max="99" inputmode="numeric" required>
                     </label>
                     <label>Cantidad
-                        <input class="admin-input" name="cantidad" type="number" min="0" inputmode="numeric" value="1" required>
+                        <input class="admin-input" name="cantidad" type="number" min="1" inputmode="numeric" value="1" required>
                     </label>
                     <button type="submit" class="admin-btn-agregar full">Guardar producto</button>
                 </form>
@@ -140,9 +140,9 @@
         <span>¡Inventario del pasillo guardado!</span>
     </div>
 
-    <script src="javascript/datos.js"></script>
-    <script src="javascript/escaner.js"></script>
-    <script src="javascript/script.js"></script>
-    <script src="javascript/admin.js"></script>
+    <script src="javascript/datos.js?v=3"></script>
+    <script src="javascript/escaner.js?v=3"></script>
+    <script src="javascript/script.js?v=3"></script>
+    <script src="javascript/admin.js?v=3"></script>
 </body>
 </html>

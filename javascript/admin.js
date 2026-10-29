@@ -8,13 +8,18 @@
    - Mientras no exista backend, los cambios se guardan en localStorage
      para que no se pierdan al recargar la página. También los guarda
      el módulo Bodega (persistirDatos() se llama desde script.js).
+   - Una talla con 0 pares no se muestra en ninguna pantalla: reaparece
+     sola cuando se vuelve a registrar un par de esa talla.
    - Debe cargarse DESPUÉS de datos.js y script.js.
    ===================================================================== */
 
 const CLAVE_LOCAL = 'adoc_inventario_v1';
 
 /* PERSISTENCIA (Servidor SQL + respaldo en localStorage) */
-async function persistirDatos() {
+// Promesa del último guardado: las lecturas esperan a que termine
+let persistenciaPendiente = Promise.resolve();
+
+async function guardarEnServidor() {
     const payload = {
         productos: PRODUCTOS,
         productosPasillo: PRODUCTOS_PASILLO
@@ -31,7 +36,13 @@ async function persistirDatos() {
     }
 }
 
+function persistirDatos() {
+    persistenciaPendiente = guardarEnServidor();
+    return persistenciaPendiente;
+}
+
 async function restaurarDatos() {
+    await persistenciaPendiente; // espera a que termine cualquier guardado en curso
     try {
         const respuesta = await fetch('/api/inventario');
         if (!respuesta.ok) throw new Error('Error al consultar API');
@@ -99,6 +110,7 @@ function adminAgregarProducto({ sku, nombre, marca, pasillo, talla, cantidad }) 
     if (errorTalla) return { ok: false, mensaje: errorTalla };
     const errorCantidad = validarCantidad(cantidad);
     if (errorCantidad) return { ok: false, mensaje: errorCantidad };
+    if (Number(cantidad) < 1) return { ok: false, mensaje: 'La cantidad inicial debe ser al menos 1.' };
 
     PRODUCTOS[sku] = { nombre, marca, tallas: [{ talla: Number(talla), cantidad: Number(cantidad) }] };
     asignarPasillo(sku + '-' + Number(talla), pasillo);
@@ -130,8 +142,16 @@ function adminAgregarTalla(sku, talla, cantidad) {
 
     talla = Number(talla);
     cantidad = Number(cantidad);
-    if (producto.tallas.some((t) => t.talla === talla)) {
-        return { ok: false, mensaje: 'La talla ' + talla + ' ya existe: usa + o − para cambiar la cantidad.' };
+    if (cantidad < 1) return { ok: false, mensaje: 'La cantidad debe ser al menos 1.' };
+
+    const existente = producto.tallas.find((t) => t.talla === talla);
+    if (existente) {
+        if (existente.cantidad > 0) {
+            return { ok: false, mensaje: 'La talla ' + talla + ' ya existe: usa + o − para cambiar la cantidad.' };
+        }
+        existente.cantidad = cantidad; // la talla estaba agotada: vuelve a aparecer
+        persistirDatos();
+        return { ok: true, mensaje: 'Talla ' + talla + ' agregada' };
     }
 
     producto.tallas.push({ talla, cantidad });
@@ -254,7 +274,7 @@ function crearFormTalla(sku) {
 
     const cantidad = document.createElement('input');
     cantidad.type = 'number';
-    cantidad.min = '0';
+    cantidad.min = '1';
     cantidad.inputMode = 'numeric';
     cantidad.placeholder = 'Cantidad';
     cantidad.value = '1';
@@ -297,10 +317,12 @@ function crearTarjetaAdmin(sku) {
     const cuerpo = crear('div', 'admin-producto-cuerpo');
     cuerpo.append(crear('p', 'product-sku', 'SKU: ' + sku));
 
-    if (producto.tallas.length === 0) {
-        cuerpo.append(crear('p', 'admin-vacio', 'Este modelo no tiene tallas. Agrega una abajo.'));
+    // Solo se listan las tallas con existencias
+    const tallasConStock = producto.tallas.filter((t) => t.cantidad > 0);
+    if (tallasConStock.length === 0) {
+        cuerpo.append(crear('p', 'admin-vacio', 'Este modelo no tiene tallas con existencias. Agrega una abajo.'));
     }
-    [...producto.tallas]
+    tallasConStock
         .sort((a, b) => a.talla - b.talla)
         .forEach((t) => cuerpo.append(crearFilaTalla(sku, t)));
 
