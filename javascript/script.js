@@ -221,13 +221,16 @@ function mostrarNoEncontrado(codigo) {
 }
 
 // Se llama cuando la cámara de zapatería lee un código
-function procesarCodigoZapateria(textoDecodificado) {
+async function procesarCodigoZapateria(textoDecodificado) {
     if (lecturaEnProceso) return;
     lecturaEnProceso = true;
 
     const codigo = textoDecodificado.trim();
     console.log('Código leído: ', codigo);
     vibrar();
+    detenerCamara();
+
+    await restaurarDatos(); // inventario actualizado antes de consultar
 
     const producto = buscarProducto(codigo);
     if (producto) {
@@ -236,11 +239,9 @@ function procesarCodigoZapateria(textoDecodificado) {
         mostrarNoEncontrado(codigo);
     }
 
-    detenerCamara();
     mostrarVista(vistaResultados);
     window.scrollTo(0, 0);
 }
-
 
 /* =====================================================================
    BODEGA: REGISTRO DE ZAPATOS POR PASILLO
