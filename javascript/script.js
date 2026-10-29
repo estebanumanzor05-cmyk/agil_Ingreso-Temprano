@@ -9,6 +9,9 @@ const textoEscaner = document.getElementById('texto-escaner');
 const textoBodega = document.getElementById('texto-bodega');
 const pasilloActual = document.getElementById('pasillo-actual');
 const listaBodega = document.getElementById('lista-bodega');
+// Talla seleccionada para registrar la venta
+let ventaActual = { sku: null, talla: null };
+let ventaEnCurso = false;
 
 // Un lector de cámara para cada módulo (ver escaner.js)
 const escanerZapateria = new EscanerCodigos(document.getElementById('reader'));
@@ -105,22 +108,86 @@ function mostrarProducto(codigo, producto) {
     }
     tarjetaProducto.append(badgeUbicacion);
 
-    // 4. Grid de disponibilidad (Se mantiene para la transición de la BD)
+        // 4. Grid de disponibilidad + selección de talla para vender
+    const datosCodigo = parsearCodigo(codigo);
+    ventaActual = { sku, talla: datosCodigo.talla };
+
     tarjetaProducto.append(crear('h3', 'stock-title', 'Disponibilidad en Bodega'));
     const grid = crear('div', 'stock-grid');
-    
+
     [...producto.tallas]
         .sort((a, b) => a.talla - b.talla)
         .forEach(({ talla, cantidad }) => {
             const item = crear('div', 'stock-item ' + claseStock(cantidad));
+            if (talla === ventaActual.talla) item.classList.add('seleccionada');
             item.append(
                 crear('span', null, 'Talla ' + talla),
                 crear('strong', null, textoPares(cantidad))
             );
+            item.addEventListener('click', () => {
+                ventaActual.talla = talla;
+                grid.querySelectorAll('.stock-item').forEach((el) => el.classList.remove('seleccionada'));
+                item.classList.add('seleccionada');
+                actualizarBotonVenta();
+            });
             grid.append(item);
         });
-
     tarjetaProducto.append(grid);
+
+    const btnVender = crear('button', 'btn-venta');
+    btnVender.id = 'btn-registrar-venta';
+    btnVender.type = 'button';
+    btnVender.addEventListener('click', registrarVenta);
+    tarjetaProducto.append(btnVender);
+    actualizarBotonVenta();
+}
+
+function actualizarBotonVenta() {
+    const btn = document.getElementById('btn-registrar-venta');
+    if (!btn) return;
+    const fila = PRODUCTOS[ventaActual.sku] &&
+        PRODUCTOS[ventaActual.sku].tallas.find((t) => t.talla === ventaActual.talla);
+
+    if (ventaActual.talla === null || !fila) {
+        btn.textContent = 'Toca la talla vendida';
+        btn.disabled = true;
+    } else if (fila.cantidad <= 0) {
+        btn.textContent = 'Talla ' + ventaActual.talla + ': sin stock';
+        btn.disabled = true;
+    } else {
+        btn.textContent = 'Registrar venta · Talla ' + ventaActual.talla + ' (−1 par)';
+        btn.disabled = false;
+    }
+}
+
+// Resta 1 par: primero trae el inventario más reciente del servidor
+async function registrarVenta() {
+    if (ventaEnCurso) return;
+    ventaEnCurso = true;
+    const { sku, talla } = ventaActual;
+
+    try {
+        await restaurarDatos(); // otro empleado pudo vender mientras tanto
+
+        const fila = PRODUCTOS[sku] && PRODUCTOS[sku].tallas.find((t) => t.talla === talla);
+        if (!fila) {
+            mostrarToast('El producto o la talla ya no existe', 2500);
+            return;
+        }
+        if (fila.cantidad <= 0) {
+            mostrarToast('Talla ' + talla + ' sin stock: no se puede vender', 2500);
+            mostrarProducto(sku + '-' + talla, PRODUCTOS[sku]);
+            return;
+        }
+
+        const resultado = adminCambiarCantidad(sku, talla, -1); // Math.max(0, cantidad - 1) + persistirDatos()
+        vibrar();
+        reproducirBeep();
+        mostrarToast('Venta registrada · ' + resultado.mensaje);
+        mostrarProducto(sku + '-' + talla, PRODUCTOS[sku]); // refresca el grid
+    } finally {
+        ventaEnCurso = false;
+    }
 }
 
     
