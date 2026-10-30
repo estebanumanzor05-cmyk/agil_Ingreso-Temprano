@@ -5,68 +5,159 @@
 
    - Trabaja sobre los mismos objetos de datos.js (PRODUCTOS, PRODUCTOS_PASILLO),
      así la zapatería y la bodega ven los cambios de inmediato.
-   - Mientras no exista backend, los cambios se guardan en localStorage
-     para que no se pierdan al recargar la página. También los guarda
-     el módulo Bodega (persistirDatos() se llama desde script.js).
+   - Cada cambio se guarda en el servidor con persistirDatos() (ver
+     PERSISTENCIA más abajo). También la llaman Bodega y la venta desde
+     script.js.
    - Una talla con 0 pares no se muestra en ninguna pantalla: reaparece
      sola cuando se vuelve a registrar un par de esa talla.
    - Debe cargarse DESPUÉS de datos.js y script.js.
    ===================================================================== */
 
-const CLAVE_LOCAL = 'adoc_inventario_v1';
+/* =====================================================================
+   PERSISTENCIA Y SINCRONIZACIÓN CON EL SERVIDOR
+   HU: "Inventario persistente y sincronizado"
+   (docs/especificaciones/HU-inventario-persistente.md, ADR 06)
 
-/* PERSISTENCIA (Servidor SQL + respaldo en localStorage) */
-// Promesa del último guardado: las lecturas esperan a que termine
+   - El inventario vive en el servidor (PostgreSQL en Render). La página
+     arranca VACÍA y lo pide al servidor; los nombres de los modelos siguen
+     saliendo de CATALOGO_MODELOS (datos.js), que ya se armó antes.
+   - Al guardar NO se manda el inventario completo: se manda lo que cambió
+     desde la última vez que se habló con el servidor (por ejemplo "talla 40
+     del modelo X: +2"). El servidor lo suma a lo que ya tiene, así dos
+     dispositivos no se borran los cambios entre sí.
+   - Las operaciones del administrador, la venta y Bodega no cambian:
+     siguen modificando PRODUCTOS y llamando a persistirDatos().
+   ===================================================================== */
+
+// Copia de cómo estaba el inventario en el servidor la última vez
+let instantaneaServidor = { productos: {}, productosPasillo: [] };
+// Cola de guardados: se envían de uno en uno y en orden
 let persistenciaPendiente = Promise.resolve();
+let guardadosEnCola = 0;
 
-async function guardarEnServidor() {
-    const payload = {
-        productos: PRODUCTOS,
-        productosPasillo: PRODUCTOS_PASILLO
+function copiarInventario() {
+    return {
+        productos: JSON.parse(JSON.stringify(PRODUCTOS)),
+        productosPasillo: PRODUCTOS_PASILLO.map((r) => ({ codigo_barra: r.codigo_barra, pasillo: r.pasillo }))
     };
+}
+
+// Reemplaza el inventario de la página por el que devolvió el servidor
+function aplicarInventarioServidor(inventario) {
+    Object.keys(PRODUCTOS).forEach((sku) => delete PRODUCTOS[sku]);
+    Object.assign(PRODUCTOS, inventario.productos);
+    PRODUCTOS_PASILLO.length = 0;
+    PRODUCTOS_PASILLO.push(...inventario.productosPasillo);
+    instantaneaServidor = copiarInventario();
+}
+
+// Compara la instantánea con el inventario actual y arma la lista de cambios
+function calcularCambios(antes, ahora) {
+    const cambios = {
+        productos: [], tallas: [], tallasEliminadas: [], productosEliminados: [],
+        pasillosAgregados: [], pasillosQuitados: []
+    };
+
+    Object.keys(antes.productos).forEach((sku) => {
+        if (!ahora.productos[sku]) cambios.productosEliminados.push(sku);
+    });
+
+    Object.keys(ahora.productos).forEach((sku) => {
+        const nuevo = ahora.productos[sku];
+        const viejo = antes.productos[sku];
+        let tocado = !viejo || viejo.nombre !== nuevo.nombre || viejo.marca !== nuevo.marca;
+
+        nuevo.tallas.forEach(({ talla, cantidad }) => {
+            const filaVieja = viejo && viejo.tallas.find((t) => t.talla === talla);
+            const delta = cantidad - (filaVieja ? filaVieja.cantidad : 0);
+            if (delta !== 0 || !filaVieja) {
+                cambios.tallas.push({ sku, talla, delta });
+                tocado = true;
+            }
+        });
+        if (viejo) {
+            viejo.tallas.forEach(({ talla }) => {
+                if (!nuevo.tallas.some((t) => t.talla === talla)) cambios.tallasEliminadas.push(sku + '-' + talla);
+            });
+        }
+        // El servidor necesita el nombre y la marca de cualquier modelo que se toque
+        if (tocado) cambios.productos.push({ sku, nombre: nuevo.nombre, marca: nuevo.marca });
+    });
+
+    const clave = (r) => r.codigo_barra + '|' + r.pasillo;
+    const pasillosAntes = new Set(antes.productosPasillo.map(clave));
+    const pasillosAhora = new Set(ahora.productosPasillo.map(clave));
+    ahora.productosPasillo.forEach((r) => { if (!pasillosAntes.has(clave(r))) cambios.pasillosAgregados.push(r); });
+    antes.productosPasillo.forEach((r) => { if (!pasillosAhora.has(clave(r))) cambios.pasillosQuitados.push(r); });
+
+    const hayCambios = Object.values(cambios).some((lista) => lista.length > 0);
+    return hayCambios ? cambios : null;
+}
+
+async function enviarCambios(cambios) {
     try {
-        localStorage.setItem(CLAVE_LOCAL, JSON.stringify(payload));
-        await fetch('/api/inventario', {
+        const respuesta = await fetch('/api/inventario/cambios', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(cambios)
         });
+        const resultado = await respuesta.json();
+        if (!respuesta.ok || !resultado.ok) throw new Error(resultado.mensaje || 'Error del servidor');
+        // Si no hay más guardados esperando, se toma la versión del servidor (incluye lo de otros dispositivos)
+        if (guardadosEnCola === 1) {
+            aplicarInventarioServidor(resultado);
+            if (typeof renderAdmin === 'function' && !vistaAdmin.classList.contains('hidden')) renderAdmin();
+        }
     } catch (error) {
-        console.warn('No se pudo sincronizar con el servidor: ', error);
+        console.warn('No se pudo guardar en el servidor: ', error);
+        mostrarToast('No se pudo guardar en el servidor. Revisa la conexión.', 3000);
+    } finally {
+        guardadosEnCola--;
     }
 }
 
 function persistirDatos() {
-    persistenciaPendiente = guardarEnServidor();
+    const ahora = copiarInventario();
+    const cambios = calcularCambios(instantaneaServidor, ahora);
+    instantaneaServidor = ahora; // el siguiente guardado se compara contra esto
+    if (!cambios) return persistenciaPendiente;
+
+    guardadosEnCola++;
+    persistenciaPendiente = persistenciaPendiente.then(() => enviarCambios(cambios));
     return persistenciaPendiente;
 }
 
 async function restaurarDatos() {
     await persistenciaPendiente; // espera a que termine cualquier guardado en curso
     try {
-        const respuesta = await fetch('/api/inventario');
+        const respuesta = await fetch('/api/inventario', { cache: 'no-store' });
         if (!respuesta.ok) throw new Error('Error al consultar API');
         const guardado = await respuesta.json();
 
         if (!guardado || typeof guardado.productos !== 'object' || !Array.isArray(guardado.productosPasillo)) return;
+        if (guardadosEnCola > 0) return; // llegó un guardado nuevo mientras tanto: se respeta
 
-        // Se actualizan los objetos globales con los datos de la base de datos SQL
-        Object.keys(PRODUCTOS).forEach((sku) => delete PRODUCTOS[sku]);
-        Object.assign(PRODUCTOS, guardado.productos);
-        PRODUCTOS_PASILLO.length = 0;
-        PRODUCTOS_PASILLO.push(...guardado.productosPasillo);
-
-        if (typeof renderAdmin === 'function') renderAdmin();
+        aplicarInventarioServidor(guardado);
+        if (typeof renderAdmin === 'function' && !vistaAdmin.classList.contains('hidden')) renderAdmin();
     } catch (error) {
-        console.warn('Usando datos locales mientras responde el servidor: ', error);
+        console.warn('No se pudo leer el inventario del servidor: ', error);
     }
 }
 
+// La página arranca vacía: el inventario de prueba de datos.js NO se usa.
+// (CATALOGO_MODELOS ya se armó en datos.js, así que los nombres se conservan.)
+Object.keys(PRODUCTOS).forEach((sku) => delete PRODUCTOS[sku]);
+PRODUCTOS_PASILLO.length = 0;
 restaurarDatos();
-// Sincronización
+
+// Sincronización: se vuelve a pedir el inventario al abrir cada módulo
+// y al regresar a la pestaña o a la app en el celular
 document.getElementById('btn-zapateria').addEventListener('click', restaurarDatos);
 document.getElementById('btn-bodega').addEventListener('click', restaurarDatos);
 document.getElementById('btn-admin').addEventListener('click', restaurarDatos);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') restaurarDatos();
+});
 
 /* ---------------------------------------------------------------------
    OPERACIONES SOBRE LOS DATOS
