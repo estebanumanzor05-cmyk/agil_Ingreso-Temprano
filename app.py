@@ -51,11 +51,6 @@ def init_db():
 
 init_db()
 
-# 1. Servir la aplicación web (index.html y carpetas css, javascript, img)
-@app.route('/')
-def index():
-    return send_from_directory('.', 'index.html')
-
 PASILLOS = ['A', 'B', 'C', 'D']
 PATRON_SKU = re.compile(r'^\d{13}$')
 
