@@ -211,6 +211,17 @@ function mostrarNoEncontrado(codigo) {
             crear('h2', 'product-title', 'Código de pasillo'),
             crear('p', null, 'Este es el código del Pasillo ' + PASILLOS[codigo] + '. Los pasillos se escanean en el módulo Bodega.')
         );
+    } else if (parsearCodigo(codigo) && CATALOGO_MODELOS[parsearCodigo(codigo).sku]) {
+        // Modelo conocido (tiene etiqueta), pero sin pares registrados en esa talla
+        const { sku, talla } = parsearCodigo(codigo);
+        const modelo = CATALOGO_MODELOS[sku];
+        contenedor.append(
+            crear('h2', 'product-title', modelo.nombre),
+            crear('p', 'product-brand', modelo.marca),
+            crear('p', null, (talla !== null ? 'La talla ' + talla + ' no tiene' : 'Este modelo no tiene') +
+                ' existencias registradas. Se registran en el módulo Bodega.'),
+            crear('span', 'codigo-leido', codigo)
+        );
     } else if (parsearCodigo(codigo)) {
         // Tiene el formato de ADOC (SKU o SKU-talla) pero no está en el inventario
         contenedor.append(
