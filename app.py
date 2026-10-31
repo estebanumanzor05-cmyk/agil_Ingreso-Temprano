@@ -25,6 +25,36 @@ from flask import Flask, jsonify, request, send_from_directory
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL', '')
 app.config['DB_PATH'] = os.environ.get('DB_PATH', 'inventario.db')
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+@app.after_request
+def no_cache(resp):
+    resp.headers['Cache-Control'] = 'no-cache, must-revalidate'
+    return resp
+
+DB_PATH = app.config['DB_PATH']
+
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    # Si la base de datos aún no existe en el servidor, la crea e inserta el mock_data_sprint1.sql
+    if not os.path.exists(DB_PATH):
+        conn = get_db()
+        with open('mock_data_sprint1.sql', 'r', encoding='utf-8') as f:
+            sql_script = f.read()
+        conn.executescript(sql_script)
+        conn.commit()
+        conn.close()
+
+init_db()
+
+# 1. Servir la aplicación web (index.html y carpetas css, javascript, img)
+@app.route('/')
+def index():
+    return send_from_directory('.', 'index.html')
 
 PASILLOS = ['A', 'B', 'C', 'D']
 PATRON_SKU = re.compile(r'^\d{13}$')
