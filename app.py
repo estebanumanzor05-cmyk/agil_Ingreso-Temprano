@@ -3,6 +3,14 @@ import sqlite3
 from flask import Flask, jsonify, request, send_from_directory
 
 app = Flask(__name__, static_folder='.', static_url_path='')
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+@app.after_request
+def no_cache(resp):
+    resp.headers['Cache-Control'] = 'no-cache, must-revalidate'
+    return resp
+
+
 DB_PATH = 'inventario.db'
 
 def get_db():
