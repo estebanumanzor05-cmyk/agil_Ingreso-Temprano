@@ -27,11 +27,6 @@ app.config['DATABASE_URL'] = os.environ.get('DATABASE_URL', '')
 app.config['DB_PATH'] = os.environ.get('DB_PATH', 'inventario.db')
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-@app.after_request
-def no_cache(resp):
-    resp.headers['Cache-Control'] = 'no-cache, must-revalidate'
-    return resp
-
 DB_PATH = app.config['DB_PATH']
 
 def get_db():
