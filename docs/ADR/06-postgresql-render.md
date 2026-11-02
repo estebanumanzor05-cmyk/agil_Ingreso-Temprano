@@ -1,7 +1,7 @@
 ADR 06 · Inventario persistente en PostgreSQL de Render
 
 <!-- Estado posible: Propuesta, Aceptada, Reemplazada por ADR 00 -->
-- Estado: Propuesta · 30 de octubre de 2026
+- Estado: Aceptada · 30 de octubre de 2026
   (Reemplaza la decisión de usar SQLite en el disco de Render, si se aceptó el ADR 05)
 
 - Contexto

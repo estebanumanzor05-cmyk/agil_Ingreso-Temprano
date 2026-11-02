@@ -80,7 +80,7 @@ function mostrarProducto(codigo, producto) {
     tarjetaProducto.replaceChildren();
 
     // 1. El código puede ser de variante (SKU-talla): la tarjeta muestra el modelo
-    const sku = parsearCodigo(codigo).sku;
+    const { sku, talla: tallaEscaneada } = parsearCodigo(codigo);
     const ubicacion = pasilloDeModelo(sku);
 
     tarjetaProducto.append(
@@ -109,8 +109,7 @@ function mostrarProducto(codigo, producto) {
     tarjetaProducto.append(badgeUbicacion);
 
     // 4. Grid de disponibilidad: solo tallas con existencias
-    const datosCodigo = parsearCodigo(codigo);
-    ventaActual = { sku, talla: datosCodigo.talla };
+    ventaActual = { sku, talla: tallaEscaneada };
 
     tarjetaProducto.append(crear('h3', 'stock-title', 'Disponibilidad en Bodega'));
 
@@ -246,7 +245,6 @@ async function procesarCodigoZapateria(textoDecodificado) {
     lecturaEnProceso = true;
 
     const codigo = textoDecodificado.trim();
-    console.log('Código leído: ', codigo);
     vibrar();
     detenerCamara();
 
@@ -322,7 +320,6 @@ function procesarCodigoBodega(textoDecodificado) {
     if (codigo === ultimoCodigoBodega && Date.now() - horaUltimoCodigo < 2000) return;
     ultimoCodigoBodega = codigo;
     horaUltimoCodigo = Date.now();
-    console.log('Código leído (bodega): ', codigo);
 
     // ¿Es el código de un pasillo?
     if (PASILLOS[codigo]) {
@@ -385,7 +382,6 @@ function guardarPasillo() {
 
     const n = totalEscaneados();
     persistirDatos(); // guarda el inventario actualizado (admin.js)
-    console.log('Pasillo ' + pasilloAbierto + ' guardado:', zapatosEscaneados);
     mostrarToast('Pasillo ' + pasilloAbierto + ' guardado (' + n + (n === 1 ? ' zapato)' : ' zapatos)'));
 
     reiniciarBodega();
@@ -408,7 +404,6 @@ function iniciarCamara(escaner, alLeer, elementoTexto) {
 function detenerCamara() {
     escanerZapateria.detener();
     escanerBodega.detener();
-    console.log('Cámara apagada.');
 }
 
 function mensajeErrorCamara(error) {
