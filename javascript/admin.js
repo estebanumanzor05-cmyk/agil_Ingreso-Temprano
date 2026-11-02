@@ -333,7 +333,6 @@ function crearFilaTalla(sku, { talla, cantidad }) {
         adminAviso(adminCambiarCantidad(sku, talla, -1));
         renderAdmin();
     });
-    restar.disabled = cantidad <= 0;
 
     const sumar = boton('admin-mas-menos', '+', 'Sumar un par', () => {
         adminAviso(adminCambiarCantidad(sku, talla, +1));
