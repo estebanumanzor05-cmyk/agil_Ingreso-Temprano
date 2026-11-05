@@ -1,20 +1,22 @@
 name: CI
 
+# Se activa CUANDO: 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
 
+# Garantiza que el backend app.py y base de datos sigan respondiendo a reglas de negocio antes de publicar
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest #computadora virtual con LINUX
     steps:
       - name: Descargar el código
         uses: actions/checkout@v4
 
-      - name: Configurar Python
-        uses: actions/setup-python@v5
+      - name: Configurar Python  
+        uses: actions/setup-python@v5 
         with:
           python-version: "3.12"
 
@@ -27,28 +29,3 @@ jobs:
       - name: Correr pruebas
         run: pytest
 
-  deploy:
-    needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Descargar el código
-        uses: actions/checkout@v4
-
-      - name: Configurar Pages
-        uses: actions/configure-pages@v5
-
-      - name: Subir el sitio
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-      - name: Publicar
-        id: deployment
-        uses: actions/deploy-pages@v4
